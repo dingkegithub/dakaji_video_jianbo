@@ -1,0 +1,67 @@
+#!/bin/bash
+DETECT_DIR="/home/wjw/Videos/wjw"
+TS_FILE_EXPIRE=10800
+DISK_FULL=80
+
+
+disk_percent() {
+    disk_info=$(df -lh | grep /dev/sda6)
+    percent=$(echo ${disk_info} | cut -d ' ' -f5 | cut -d '%' -f1)
+    echo ${percent}
+}
+
+
+clean_ch() {
+    ch_dirs=$(ls $1)
+
+    for ch_dir in ${ch_dirs}
+    do
+        ts_files=$(ls $1/${ch_dir})
+        for ts_file in ${ts_files}
+        do
+            cur_timestamp=$(date +%s)
+            ts_timestamp=$(echo ${ts_file} | cut -d '.' -f1)
+            dela_seconds=$(echo "${cur_timestamp} - ${ts_timestamp}" | bc)
+            if [ ${dela_seconds} -gt $2 ]; then
+                rm -rf $1/${ch_dir}/${ts_file}
+            fi
+        done
+    done
+}
+
+main() {
+    today=$(date +%Y%m%d)
+    cd ${DETECT_DIR}
+    echo "dir: ${DETECT_DIR}"
+
+    record_dirs=$(ls ${DETECT_DIR})
+
+    for record_dir in ${record_dirs}
+    do
+        vs=$(echo "${today} > ${record_dir}" | bc)
+	echo $record_dir $today $vs 
+        if [ ${vs} -eq 1 ]; then
+            rm -rf ${record_dir}
+            continue
+        else
+            multiple=1
+            channel_dirs=$(ls ${record_dir})
+
+            while true
+            do
+                disk_size=$(disk_percent)
+                d_vs=$(echo "${disk_size} > ${DISK_FULL}" | bc)
+                if [ ${d_vs} -eq 1]; then
+                    expire=$(echo "${DISK_FULL} * ${multiple}" | bc)     
+	            clean_ch ${record_dir} ${expire}
+                    multiple=$(echo "${multiple} + 1" | bc) 
+                else:
+                    break
+                fi
+            done
+        fi
+    done
+}
+
+main
+

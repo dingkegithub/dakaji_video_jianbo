@@ -1,0 +1,116 @@
+#!/bin/bash
+CHANNEL_LIST=("HuNanWs"
+              "JiangSuWs"
+              "AnHuiWs"
+              "BeiJingWs"
+              "ChongQinWs"
+              "DongFangWs"
+              "DongNanWs"
+              "GanSuWs"
+              "GuangDongWs"
+              "GuangXiWs"
+              "GuiZhouWs"
+              "HeBeiWs"
+              "HeNanWs"
+              "HeiLongJiangWs"
+              "HuBeiWs"
+              "JiangXiWs"
+              "JiLingWs"
+              "LiaoNingWs"
+              "NeiMengGuWs"
+              "NingXiaWs"
+              "QingHaiWs"
+              "YunNanWs"
+              "XiZangWs"
+              "XinJiangWs"
+              "XiaMengWs"
+              "TianJinWs"
+              "SiChuangWs"
+              "ShanDongWs"
+              "ShanXiWs"
+              "ShenZhenWs"
+              "FuJianXiaMengWs"
+              "YanBianWs"
+              "LvYouWs"
+              "NanFangWs"
+              "MengYuWs"
+              "SanShaWs"
+              "HaiXiaWs"
+              "KangBaWs"
+              "ZheJiangWs"
+              "CCTV1"
+              "CCTV2"
+              "CCTV3"
+              "CCTV4"
+              "CCTV5"
+              "CCTV6"
+              "CCTV7"
+              "CCTV8"
+              "CCTV9"
+              "CCTV10"
+              "CCTV11"
+              "CCTV12"
+              "CCTV-ShaoEr"
+              "CCTV-News")
+
+CHANNEL_NUM=${#CHANNEL_LIST[@]}
+
+echo ""
+echo "1. Select Channel Name:"
+echo "========================================"
+for((i=0; i<${CHANNEL_NUM}; i++))
+do
+    echo "->$i. ${CHANNEL_LIST[@]:${i}:1}"
+done
+echo "========================================"
+echo -n "select channel: [0~${CHANNEL_NUM}]?:"
+read idx
+if [ -z ${idx} ]; then
+    echo "error: must select channel"
+    exit
+fi
+CHANNEL_NAME=${CHANNEL_LIST[@]:${idx}:1}
+
+echo ""
+echo -n "2. input video address [udp://@addr:port/]:"
+read addr
+if [ -z ${addr} ]; then
+    echo "error: need video source"
+fi
+MULTICAST_ADDR=${addr}
+
+echo ""
+echo -n "3. input video port [2000~65536]:"
+read port
+if [ -z ${port} ]; then
+    echo "error: need port"
+fi
+MULTICAST_PORT=${port}
+
+echo ""
+echo -n "4. input record root save path:"
+read dir
+if [ -z ${dir} ]; then
+    echo "error: need record path to save recorded video"
+fi
+RECORD_ROOT_PATH=${dir}
+
+echo ""
+echo -n "5. syn root dir?:"
+read dir
+if [ -z ${dir} ]; then
+    echo "error: need rsync dir"
+fi
+SYN_ROOT_DIR=${dir}
+
+echo ""
+echo "copy flow command and run"
+echo "-----------------------------------------------------------"
+echo "jbrecord ${CHANNEL_NAME} ${MULTICAST_ADDR} ${MULTICAST_PORT} ${RECORD_ROOT_PATH} ${SYN_ROOT_DIR}"
+echo "jbsyn ${MULTICAST_PORT} ${SYN_ROOT_DIR}"
+echo "-----------------------------------------------------------"
+echo ""
+
+#(nohup ./jbrecord ${CHANNEL_NAME} ${MULTICAST_ADDR} ${MULTICAST_PORT} ${RECORD_ROOT_PATH} ${SYN_ROOT_DIR} &)
+
+
