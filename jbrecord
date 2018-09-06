@@ -12,6 +12,8 @@ MULTICAST_PORT=$3
 RECORD_ROOT_PATH=$4
 SYN_ROOT_DIR=$5
 
+TEST_MODE=1
+
 CHANNEL_SYN_DIR="${SYN_ROOT_DIR}/${MULTICAST_PORT}"
 mkdir -p ${CHANNEL_SYN_DIR}
 
@@ -67,12 +69,16 @@ do
     if [ -d ${save_dir} ]; then
         out_video=${save_dir}/$(date +%H%M%S).ts
         echo "$(%d +%Y-%m-%dT%H:%M:%S: record file is start ${out_video})" >> ${LOG}
-           
-        # -b 400k bit rate
-        #/usr/bin/ffmpeg -i ${MULTICAST_ADDR} -r 15 -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
-        /usr/bin/ffmpeg -i ${MULTICAST_ADDR} -c:v copy -c:a copy -bsf:a aac_adtstoasc -ss 00:00:00 -t ${VIDEO_SLICES} ${out_video}
 
-        echo "$(%d +%Y-%m-%dT%H:%M:%S: record file is end ${out_video})" >> ${LOG}
+        if [ ${TEST_MODE} -eq 1 ]; then
+            ./recordtst ${out_video}
+        else
+            # -b 400k bit rate
+            #/usr/bin/ffmpeg -i ${MULTICAST_ADDR} -r 15 -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
+            /usr/bin/ffmpeg -i ${MULTICAST_ADDR} -c:v copy -c:a copy -bsf:a aac_adtstoasc -ss 00:00:00 -t ${VIDEO_SLICES} ${out_video}
+            echo "$(%d +%Y-%m-%dT%H:%M:%S: record file is end ${out_video})" >> ${LOG}
+        fi
+
     fi
     
     log ${LOG} ${LOG_SIZE}
