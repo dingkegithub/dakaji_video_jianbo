@@ -37,7 +37,7 @@ log() {
         fi
     fi
 
-    echo "$(%d +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
 }
 
 info() {
