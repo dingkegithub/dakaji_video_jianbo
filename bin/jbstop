@@ -1,4 +1,5 @@
 #!/bin/bash
+START_CMD=jbstart
 RECORD_CMD=jbrecord
 COMP_CMD=jbcomp
 FFMPEG_CMD=ffmpeg
@@ -21,6 +22,7 @@ touch ${TMP_FILE}
 ps -ef | grep ${RECORD_CMD} | grep -v 'grep' > ${TMP_FILE}
 ps -ef | grep ${COMP_CMD} | grep -v 'grep' >> ${TMP_FILE}
 ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' >> ${TMP_FILE}
+ps -ef | grep ${START_CMD} | grep -v 'grep' > ${TMP_FILE}
 
 while read line
 do
