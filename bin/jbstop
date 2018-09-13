@@ -24,7 +24,7 @@ ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' >> ${TMP_FILE}
 
 while read line
 do
-    line_array=$(echo ${line})
+    line_array=($(echo ${line}))
     pid=${line_array[1]}
     name=${line_array[7]}
     echo "$(date +%Y-%m-%dT%H:%M:%S) INFO line is ${line}"
