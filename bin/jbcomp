@@ -6,19 +6,19 @@ TEST_MODE=0
 
 BIT_RATE=400k
 
+CH_COMP_DIR=""
 LOG_NAME=""
 if [ -z ${PORT} ]; then
     LOG_NAME=jbc
-
+    CH_COMP_DIR=${COMP_DIR}
 else
     LOG_NAME="jbc.${PORT}"
+    CH_COMP_DIR="${COMP_DIR}/${PORT}"
 fi
 
-CH_COMP_DIR=${COMP_DIR}
 
 LOG_SIZE=10000000
 LOG="/var/log/${LOG_NAME}"
-
 
 log() {
     if [ ! -f ${LOG} ]; then
@@ -33,7 +33,7 @@ log() {
         fi
     fi
 
-    echo "$(%d +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
 }
 
 while true
@@ -45,6 +45,8 @@ do
         else
             files=$(ls ${CH_COMP_DIR} | grep ${PORT})
         fi
+
+        log "INFO CH_COMP_DIR=${CH_COMP_DIR} ${PORT}"
 
         for file in ${files}
         do
