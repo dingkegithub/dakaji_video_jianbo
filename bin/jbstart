@@ -1,5 +1,4 @@
 #!/bin/bash
-route-enable
 JB_CONF_DIR=/etc/jb
 JB_CONF_FILE=jb.conf
 JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"
@@ -24,6 +23,10 @@ log() {
 
     echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
 }
+log "INFO start route"
+$(route-enable)
+log "INFO end route"
+
 
 if [ ! -d ${JB_CONF_DIR} ] || [ ! -f ${JB_CONF} ]; then
     log "ERROR: not exist dir ${JB_CONF_DIR} or not exit file ${JB_CONF}"
