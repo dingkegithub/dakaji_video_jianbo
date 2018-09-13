@@ -2,7 +2,8 @@
 cp -f bin/jbchlist /usr/local/bin/
 cp -f bin/jbrstart /usr/local/bin/
 cp -f bin/jbrecord /usr/local/bin/
-cp -f bin/jbcompress /usr/local/bin/
+cp -f bin/jbcomp /usr/local/bin/
+cp -rf etc/jb /etc/
 cp -f bin/route-enable /bin/
 cp -rf usr/lib/systemd/system /usr/lib/systemd/
 systemctl enable router.service
