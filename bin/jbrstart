@@ -1,6 +1,6 @@
 #!/bin/bash
-JB_CONF_DIR='/etc/jb'
-JB_CONF_FILE='jb.conf'
+JB_CONF_DIR=/etc/jb
+JB_CONF_FILE=jb.conf
 JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"
 
 JB_CH_CONF_FILE='jbr.conf'
