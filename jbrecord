@@ -1,74 +1,66 @@
 #!/bin/bash
-
-LOG="/var/log/jbr.log"
-LOG_SIZE=10000000
-
-VIDEO_SLICES=00:15:00
-LAST_RECORD_DIR=""
-
 CHANNEL_NAME=$1
 MULTICAST_ADDR=$2
 MULTICAST_PORT=$3
 RECORD_ROOT_PATH=$4
-SYN_ROOT_DIR=$5
+COMPRESS_ROOT_DIR=$5
+VIDEO_SLICES=$6
+
+LOG_SIZE=10000000
+LOG="/var/log/jbr.${MULTICAST_PORT}"
 
 TEST_MODE=1
+LAST_RECORD_DIR=""
 
-CHANNEL_SYN_DIR="${SYN_ROOT_DIR}/${MULTICAST_PORT}"
-mkdir -p ${CHANNEL_SYN_DIR}
+CHANNEL_COMPRESS_DIR="${COMPRESS_ROOT_DIR}/${MULTICAST_PORT}"
+mkdir -p ${CHANNEL_COMPRESS_DIR}
 
 log() {
-    if [ ! -f $1 ]; then
-        touch $1
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
     else
-        log_size=$(ls -l $1 | cut -d ' ' -f5)
-        too_bigger=$(echo "${log_size} >= $2" | bc)
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
 
         if [ ${too_bigger} -eq 1 ]; then
-            rm $1
-            touch $1
+            rm ${LOG}
+            touch ${LOG}
         fi
     fi
-}
 
-log ${LOG} ${LOG_SIZE}
+    echo "$(%d +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
 
 info() {
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: CHANNEL NAME    : ${CHANNEL_NAME})"    >> ${LOG}
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: MULTICAST ADDR  : ${MULTICAST_ADDR})"  >> ${LOG}
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: MULTICAST PORT  : ${MULTICAST_PORT})"  >> ${LOG}
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: RECORD ROOT PATH: ${RECORD_ROOT_PATH})">> ${LOG}
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: SYN_ROOT DIR    : ${SYN_ROOT_DIR})"    >> ${LOG}
+    log "INFO: CHANNEL NAME = ${CHANNEL_NAME}"
+    log "INFO: MULTICAST ADDR = ${MULTICAST_ADDR}"
+    log "INFO: MULTICAST PORT = ${MULTICAST_PORT}"
+    log "INFO: RECORD ROOT PATH = ${RECORD_ROOT_PATH}"
+    log "INFO: COMPRESS ROOT DIR = ${COMPRESS_ROOT_DIR}"
 }
-
-info
-exit
-
 
 while true
 do
-    save_dir=${RECORD_ROOT_PATH}/${CHANNEL_NAME}/$(date +%Y%m%d)/$(date +%H)
+    save_dir=${RECORD_ROOT_PATH}/${MULTICAST_PORT}/${CHANNEL_NAME}/$(date +%Y%m%d)/$(date +%H)
     mkdir -p ${save_dir}
+    log "INFO save dir is ${save_dir}"
     
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: save dir is ${save_dir})" >> ${LOG}
-    echo "$(%d +%Y-%m-%dT%H:%M:%S: save dir is ${LAST_RECORD_DIR})" >> ${LOG}
-
-    if [ -z "${LAST_RECORD_DIR}" ]; then
-        LAST_RECORD_DIR=${save_dir}
-    fi
-
-    if [ "${LAST_RECORD_DIR}" != ${save_dir} ]; then
-        syn_file=${CHANNEL_SYN_DIR}/${LAST_RECORD_DIR//\//_}
-        touch ${syn_file}
-        echo "${LAST_RECORD_DIR}" >> ${syn_file}
-
-        echo "$(%d +%Y-%m-%dT%H:%M:%S: syn file is write ${syn_file})" >> ${LOG}
-        LAST_RECORD_DIR=${save_dir}
-    fi
+    #if [ -z "${LAST_RECORD_DIR}" ]; then
+        #LAST_RECORD_DIR=${save_dir}
+    #fi
+    
+    #log "INFO last dir is ${LAST_RECORD_DIR}"
+    #if [ "${LAST_RECORD_DIR}" != ${save_dir} ]; then
+        #syn_file=${CHANNEL_COMPRESS_DIR}/${LAST_RECORD_DIR//\//_}
+        #touch ${syn_file}
+        #echo "${LAST_RECORD_DIR}" >> ${syn_file}
+        #LAST_RECORD_DIR=${save_dir}
+        #log "INFO: syn file is write ${syn_file}"
+    #fi
 
     if [ -d ${save_dir} ]; then
         out_video=${save_dir}/$(date +%H%M%S).ts
-        echo "$(%d +%Y-%m-%dT%H:%M:%S: record file is start ${out_video})" >> ${LOG}
+        log "INFO: record file is start ${out_video}"
 
         if [ ${TEST_MODE} -eq 1 ]; then
             ./recordtst ${out_video}
@@ -76,11 +68,12 @@ do
             # -b 400k bit rate
             #/usr/bin/ffmpeg -i ${MULTICAST_ADDR} -r 15 -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
             /usr/bin/ffmpeg -i ${MULTICAST_ADDR} -c:v copy -c:a copy -bsf:a aac_adtstoasc -ss 00:00:00 -t ${VIDEO_SLICES} ${out_video}
-            echo "$(%d +%Y-%m-%dT%H:%M:%S: record file is end ${out_video})" >> ${LOG}
+            log "INFO: record file is end ${out_video}"
         fi
 
+        compress_file="${CHANNEL_COMPRESS_DIR}/${MULTICAST_PORT}_$(date +%Y-%m-%dT%H:%M:%S)"
+        touch ${compress_file}
+        echo "${out_video}" >> ${compress_file}
     fi
-    
-    log ${LOG} ${LOG_SIZE}
 done
 
