@@ -2,18 +2,27 @@
 CHANNEL_NAME=$1
 MULTICAST_ADDR=$2
 MULTICAST_PORT=$3
-RECORD_ROOT_PATH=$4
-COMPRESS_ROOT_DIR=$5
+RECORD_DIR=$4
+COMP_DIR=$5
 VIDEO_SLICES=$6
 
 LOG_SIZE=10000000
 LOG="/var/log/jbr.${MULTICAST_PORT}"
 
-TEST_MODE=1
+TEST_MODE=0
 LAST_RECORD_DIR=""
 
-CHANNEL_COMPRESS_DIR="${COMPRESS_ROOT_DIR}/${MULTICAST_PORT}"
-mkdir -p ${CHANNEL_COMPRESS_DIR}
+CH_COMP_DIR="${COMP_DIR}/${MULTICAST_PORT}"
+mkdir -p ${CH_COMP_DIR}
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
 
 log() {
     if [ ! -f ${LOG} ]; then
@@ -35,13 +44,13 @@ info() {
     log "INFO: CHANNEL NAME = ${CHANNEL_NAME}"
     log "INFO: MULTICAST ADDR = ${MULTICAST_ADDR}"
     log "INFO: MULTICAST PORT = ${MULTICAST_PORT}"
-    log "INFO: RECORD ROOT PATH = ${RECORD_ROOT_PATH}"
-    log "INFO: COMPRESS ROOT DIR = ${COMPRESS_ROOT_DIR}"
+    log "INFO: RECORD ROOT PATH = ${RECORD_DIR}"
+    log "INFO: COMPRESS ROOT DIR = ${COMP_DIR}"
 }
 
 while true
 do
-    save_dir=${RECORD_ROOT_PATH}/${MULTICAST_PORT}/${CHANNEL_NAME}/$(date +%Y%m%d)/$(date +%H)
+    save_dir=${RECORD_DIR}/${MULTICAST_PORT}/${CHANNEL_NAME}/$(date +%Y%m%d)/$(date +%H)
     mkdir -p ${save_dir}
     log "INFO save dir is ${save_dir}"
     
@@ -67,11 +76,15 @@ do
         else
             # -b 400k bit rate
             #/usr/bin/ffmpeg -i ${MULTICAST_ADDR} -r 15 -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
-            /usr/bin/ffmpeg -i ${MULTICAST_ADDR} -c:v copy -c:a copy -bsf:a aac_adtstoasc -ss 00:00:00 -t ${VIDEO_SLICES} ${out_video}
+            #/usr/bin/ffmpeg -i ${MULTICAST_ADDR} -c:v copy -c:a copy -bsf:a aac_adtstoasc -ss 00:00:00 -t ${VIDEO_SLICES} ${out_video}
+            /usr/bin/ffmpeg -i ${MULTICAST_ADDR} -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
             log "INFO: record file is end ${out_video}"
         fi
 
-        compress_file="${CHANNEL_COMPRESS_DIR}/${MULTICAST_PORT}_$(date +%Y-%m-%dT%H:%M:%S)"
+        compress_file="${CH_COMP_DIR}/${MULTICAST_PORT}_$(date +%Y-%m-%dT%H:%M:%S)"
+        if [ -f ${compress_file} ]; then
+            remove ${compress_file}
+        fi
         touch ${compress_file}
         echo "${out_video}" >> ${compress_file}
     fi

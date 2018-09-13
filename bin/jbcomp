@@ -1,17 +1,24 @@
 #!/bin/bash
-CH_NAME=$1
-VIDEO_PORT=$2
-COMP_ROOT_DIR=$3
-RSYNC_ROOT_DIR=$4
+COMP_DIR=$1
+RSYN_DIR=$2
+PORT="$3"
+TEST_MODE=0
 
 BIT_RATE=400k
+
+LOG_NAME=""
+if [ -z ${PORT} ]; then
+    LOG_NAME=jbc
+
+else
+    LOG_NAME="jbc.${PORT}"
+fi
+
+CH_COMP_DIR=${COMP_DIR}
+
 LOG_SIZE=10000000
-LOG="/var/log/jbc.${MULTICAST_PORT}"
+LOG="/var/log/${LOG_NAME}"
 
-#CH_COMP_DIR="${COMP_ROOT_DIR}/${VIDEO_PORT}"
-CH_COMP_DIR="${COMP_ROOT_DIR}"
-
-TEST_MODE=1
 
 log() {
     if [ ! -f ${LOG} ]; then
@@ -32,7 +39,13 @@ log() {
 while true
 do
     if [ -d ${CH_COMP_DIR} ]; then
-        files=$(ls ${CH_COMP_DIR})
+        files=""
+        if [ -z ${PORT} ]; then
+            files=$(ls ${CH_COMP_DIR})
+        else
+            files=$(ls ${CH_COMP_DIR} | grep ${PORT})
+        fi
+
         for file in ${files}
         do
             cmp_meta_file="${CH_COMP_DIR}/${file}"
@@ -46,7 +59,7 @@ do
             meta_ch_hour=${record_meta[$(echo "${meta_size}-2" | bc)]}
             meta_ch_file=${record_meta[$(echo "${meta_size}-1" | bc)]}
            
-            comp_out_dir="${RSYNC_ROOT_DIR}/${meta_ch_port}/${meta_ch_name}/${meta_ch_date}/${meta_ch_hour}"
+            comp_out_dir="${RSYN_DIR}/${meta_ch_port}/${meta_ch_name}/${meta_ch_date}/${meta_ch_hour}"
             mkdir -p ${comp_out_dir}
             comp_out_file="${comp_out_dir}/${meta_ch_file}"
 
