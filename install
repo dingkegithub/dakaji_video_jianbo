@@ -1,10 +1,10 @@
 #!/bin/bash
-
-cp -f jbcmdgen /usr/local/bin/
-cp -f jbrecord /usr/local/bin/
-cp -f jbsyn /usr/local/bin/
-cp -rf usr/lib/systemd/system /usr/lib/systemd/
+cp -f bin/jbchlist /usr/local/bin/
+cp -f bin/jbrstart /usr/local/bin/
+cp -f bin/jbrecord /usr/local/bin/
+cp -f bin/jbcompress /usr/local/bin/
 cp -f route-enable /bin/
+cp -rf usr/lib/systemd/system /usr/lib/systemd/
 systemctl enable router.service
 systemctl enable router.timer
 systemctl start router.service
