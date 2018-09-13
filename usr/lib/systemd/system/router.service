@@ -1,7 +1,0 @@
-[Uint]
-Description=router
-
-[Service]
-Type=simple
-ExecStart=/bin/route-enable
-

@@ -3,7 +3,7 @@ Description=on boot start
 
 [Timer]
 OnBootSec=2min
-Unit=router.service
+Unit=jb.service
 
 [Install]
 WantedBy=multi-user.target

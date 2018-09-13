@@ -56,18 +56,18 @@ CHANNEL_LIST=("HuNanWs"
 CHANNEL_NUM=${#CHANNEL_LIST[@]}
 
 echo ""
-echo "1. Select Channel Name:"
+echo "Select Channel Name:"
 echo "========================================"
 for((i=0; i<${CHANNEL_NUM}; i++))
 do
     echo "->$i. ${CHANNEL_LIST[@]:${i}:1}"
 done
 echo "========================================"
-echo -n "select channel: [0~${CHANNEL_NUM}]?:"
-read idx
-if [ -z ${idx} ]; then
-    echo "error: must select channel"
-    exit
-fi
+#echo -n "select channel: [0~${CHANNEL_NUM}]?:"
+#read idx
+#if [ -z ${idx} ]; then
+#    echo "error: must select channel"
+#    exit
+#fi
 
 

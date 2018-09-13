@@ -1,4 +1,5 @@
 #!/bin/bash
+route-enable
 JB_CONF_DIR=/etc/jb
 JB_CONF_FILE=jb.conf
 JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"

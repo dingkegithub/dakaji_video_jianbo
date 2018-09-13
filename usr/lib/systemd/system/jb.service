@@ -1,0 +1,9 @@
+[Uint]
+Description=router
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/jbrstart
+
+[Install]
+WantedBy=multi-user.target

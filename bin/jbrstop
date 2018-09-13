@@ -1,18 +1,34 @@
 #!/bin/bash
-RECORD_PROCESS_NAME='jbrecord'
+RECORD_CMD=jbrecord
+COMP_CMD=jbcomp
+FFMPEG_CMD=ffmpeg
 
-record_process=$(ps -ef | grep ${RECORD_PROCESS_NAME} | grep -v grep)
-if [ -n ${record_process} ]; then
-    pid=$(echo ${record_process} | cut -d ' ' -f2)
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+TMP_FILE="/var/log/jbcmds"
+if [ -f ${TMP_FILE} ]; then
+    remove ${TMP_FILE} 
+fi
+touch ${TMP_FILE}
+
+ps -ef | grep ${RECORD_CMD} | grep -v 'grep' > ${TMP_FILE}
+ps -ef | grep ${COMP_CMD} | grep -v 'grep' >> ${TMP_FILE}
+ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' >> ${TMP_FILE}
+
+while read line
+do
+    line_array=$(echo ${line})
+    pid=${line_array[1]}
+    name=${line_array[7]}
+    echo "$(date +%Y-%m-%dT%H:%M:%S) INFO line is ${line}"
+    echo "$(date +%Y-%m-%dT%H:%M:%S) INFO kill ${name}:${pid}"
     kill -9 ${pid}
-fi
-
-sleep 5
-
-record_process=$(ps -ef | grep ${RECORD_PROCESS_NAME} | grep -v grep)
-if [ -z ${record_process} ]; then
-    echo "ok: stop process ${RECORD_PROCESS_NAME} success"
-else
-    echo "error: stop process ${RECORD_PROCESS_NAME} failed !!!!"
-fi
+done < ${TMP_FILE}
 

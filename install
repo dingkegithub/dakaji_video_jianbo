@@ -4,9 +4,9 @@ cp -f bin/jbrstart /usr/local/bin/
 cp -f bin/jbrecord /usr/local/bin/
 cp -f bin/jbcomp /usr/local/bin/
 cp -rf etc/jb /etc/
-cp -f bin/route-enable /bin/
+cp -f bin/route-enable /usr/local/bin/
 cp -rf usr/lib/systemd/system /usr/lib/systemd/
-systemctl enable router.service
-systemctl enable router.timer
-systemctl start router.service
-systemctl start router.timer
+systemctl enable jb.service
+systemctl enable jb.timer
+systemctl start jb.service
+systemctl start jb.timer
