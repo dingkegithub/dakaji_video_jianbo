@@ -3,7 +3,7 @@ cp -f bin/jbchlist /usr/local/bin/
 cp -f bin/jbrstart /usr/local/bin/
 cp -f bin/jbrecord /usr/local/bin/
 cp -f bin/jbcompress /usr/local/bin/
-cp -f route-enable /bin/
+cp -f bin/route-enable /bin/
 cp -rf usr/lib/systemd/system /usr/lib/systemd/
 systemctl enable router.service
 systemctl enable router.timer
