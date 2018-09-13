@@ -84,13 +84,27 @@ do
     done < ${conf_file}
 
     msg="(jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &)"
-    #(jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &)
+    (jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &)
     nohup jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &
     log "INFO: run cmd: ${msg}"
     
     msg="(jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &)"
-    #(jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &)
-    nohup jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &
+    (jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &)
     log "INFO: run cmd: ${msg}"
+done
+
+RECORD_CMD=jbrecord
+COMP_CMD=jbcomp
+FFMPEG_CMD=ffmpeg
+while true
+do
+    record_num=$(ps -ef | grep ${RECORD_CMD} | grep -v 'grep' | wc -l)
+    comp_num=$(ps -ef | grep ${COMP_CMD} | grep -v 'grep' | wc -l)
+    ffmpeg_num=$(ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' | wc -l)
+
+    log "INFO current record num ${record_num}"
+    log "INFO current comp num ${comp_num}"
+    log "INFO current ffmpeg num ${ffmpeg_num}"
+    sleep 300
 done
 
