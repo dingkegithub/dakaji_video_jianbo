@@ -20,6 +20,15 @@ fi
 LOG_SIZE=10000000
 LOG="/var/log/${LOG_NAME}"
 
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
 log() {
     if [ ! -f ${LOG} ]; then
         touch ${LOG}
@@ -55,11 +64,11 @@ do
 
             meta=(${record_file//\// })
             meta_size=${#meta[@]}
-            meta_ch_port=${record_meta[$(echo "${meta_size}-5" | bc)]}
-            meta_ch_name=${record_meta[$(echo "${meta_size}-4" | bc)]}
-            meta_ch_date=${record_meta[$(echo "${meta_size}-3" | bc)]}
-            meta_ch_hour=${record_meta[$(echo "${meta_size}-2" | bc)]}
-            meta_ch_file=${record_meta[$(echo "${meta_size}-1" | bc)]}
+            meta_ch_port=${meta[$(echo "${meta_size}-5" | bc)]}
+            meta_ch_name=${meta[$(echo "${meta_size}-4" | bc)]}
+            meta_ch_date=${meta[$(echo "${meta_size}-3" | bc)]}
+            meta_ch_hour=${meta[$(echo "${meta_size}-2" | bc)]}
+            meta_ch_file=${meta[$(echo "${meta_size}-1" | bc)]}
            
             comp_out_dir="${RSYN_DIR}/${meta_ch_port}/${meta_ch_name}/${meta_ch_date}/${meta_ch_hour}"
             mkdir -p ${comp_out_dir}
