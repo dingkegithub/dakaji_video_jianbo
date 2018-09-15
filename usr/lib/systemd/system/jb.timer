@@ -1,9 +1,0 @@
-[Unit]
-Description=on boot start
-
-[Timer]
-OnBootSec=2min
-Unit=jb.service
-
-[Install]
-WantedBy=multi-user.target

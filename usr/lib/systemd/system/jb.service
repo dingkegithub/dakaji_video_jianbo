@@ -1,9 +1,0 @@
-[Uint]
-Description=router
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/jbstart
-
-[Install]
-WantedBy=multi-user.target
