@@ -1,0 +1,117 @@
+#!/bin/bash
+JB_CONF=$1
+JB_CONF_DIR=$(dirname ${JB_CONF})
+
+LOG_DIR="/var/log/jb"
+LOG="${LOG_DIR}/disk.log"
+LOG_SIZE=10000000
+TMP_FILE=${LOG_DIR}"/.disk"
+mkdir -p ${LOG_DIR}
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+if [ ! -d ${JB_CONF_DIR} ] || [ ! -f ${JB_CONF} ]; then
+    log "ERROR: not exist dir ${JB_CONF_DIR} or not exit file ${JB_CONF}"
+    exit
+fi
+
+declare -A jbconf=()
+while read line
+do
+    if [ -z ${line} ]; then
+        continue
+    fi
+    key=$(echo ${line} | cut -d '=' -f1)
+    value=$(echo ${line} | cut -d '=' -f2)
+    jbconf["${key}"]="${value}"
+done < ${JB_CONF}
+
+RECORD_DIR=${jbconf['RECORD_DIR']}
+EXPIRE_HOUR=${jbconf['DISK_EXPIRE_HOUR']}
+DISK=${jbconf['DISK_DIR']}
+CYCLE=${jbconf['DISK_CYCLE']}
+WARN=${jbconf['DISK_WARN_LEVEL']}
+
+clean() {
+    p_path=$1
+    for ch_dir in $(ls ${p_path})
+    do
+        ch_path="${p_path}/${ch_dir}"
+        for y_dir in $(ls ${ch_path})
+        do
+            today=$(date +%Y%m%d)
+            if [ ${y_dir} -lt ${today} ]; then
+                log "INFO clean path ${ch_path}/${y_dir}"
+                remove "${ch_path}/${y_dir}" 
+                break
+            else
+                y_path="${ch_path}/${y_dir}"
+                now=$(date +%H)
+                r_h=$(echo "${now} - ${EXPIRE_HOUR}" | bc)
+                for d_dir in $(ls ${y_path})
+                do
+                    if [ ${d_dir} -lt ${r_h} ]; then
+                        log "INFO delete path ${y_path}/${d_dir}"
+                        remove "${y_path}/${d_dir}"
+                    fi 
+                done
+            fi
+        done
+    done
+}
+
+
+
+if [ ! -f ${TMP_FILE} ]; then
+    touch ${TMP_FILE}
+fi
+
+while true
+do
+    i=0
+    dfres=$(df -lh ${DISK})
+
+    disk_info=(echo ${dfres})
+    size=${#disk_info[@]}
+    used=${disk_info[$(echo "${size} - 2" | bc)]}
+    used_percent=$(echo ${used} | cut -d '%' -f1)
+
+    log "INFO used percent ${used_percent}%, WARN[${WARN}]"
+
+    res=$(echo "${used_percent} > ${WARN}" | bc)
+    if [ ${res} -eq 1 ]; then
+        log "WARN disk will full"
+        for p_dir in $(ls ${RECORD_DIR})
+        do
+            clean "${RECORD_DIR}/${p_dir}"
+        done
+    fi
+
+    log "INFO clean over"
+    break
+    #    log "INFO clean over sleeping"
+    #    sleep ${CYCLE}
+done

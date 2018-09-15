@@ -1,0 +1,14 @@
+#!/bin/bash
+cp -f bin/jbchlist /usr/local/bin/
+cp -f bin/jbstart /usr/local/bin/
+cp -f bin/jbstop /usr/local/bin/
+cp -f bin/jbrecord /usr/local/bin/
+cp -f bin/jbsyn /usr/local/bin/
+cp -f bin/jbdisk /usr/local/bin/
+cp -f bin/route-enable /usr/local/bin/
+cp -rf etc/jb /etc/
+cp -rf usr/lib/systemd/system /usr/lib/systemd/
+systemctl enable jb.service
+systemctl enable jb.timer
+systemctl start jb.service
+systemctl start jb.timer

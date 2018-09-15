@@ -1,0 +1,32 @@
+#!/bin/bash
+INSTALL_DIR=/usr/local
+
+apt-get update
+apt-get remove vim-tiny
+apt-get install vim
+apt-get install tree
+apt-get install build-essential
+apt-get install pkg-config
+apt-get install net-tools
+apt-get install openssh-server
+
+tar xf pkg/yasm-1.3.0.tar.gz -C ${INSTALL_DIR}
+tar xf pkg/ffmpeg-4.0.2.tar.bz2 -C ${INSTALL_DIR}
+
+mv ${INSTALL_DIR}/yasm-1.3.0  ${INSTALL_DIR}/yasm
+mv ${INSTALL_DIR}/ffmpeg-4.0.2  ${INSTALL_DIR}/ffmpeg
+
+current_dir=$(pwd)
+
+cd ${INSTALL_DIR}/yasm
+./configure
+make -j8
+make install
+
+cd ${INSTALL_DIR}/ffmpeg
+./configure
+make -j8
+make install
+
+cd ${current_dir}
+./appinstall

@@ -1,0 +1,87 @@
+#!/bin/bash
+JB_CONF_DIR=/etc/jb
+JB_CONF_FILE=jb.conf
+JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"
+
+LOG_DIR=/var/log/jb
+LOG="${LOG_DIR}/jbstart.log"
+LOG_SIZE=10000000
+mkdir -p ${LOG_DIR}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+if [ ! -d ${JB_CONF_DIR} ] || [ ! -f ${JB_CONF} ]; then
+    log "ERROR: not exist dir ${JB_CONF_DIR} or not exit file ${JB_CONF}"
+    exit
+fi
+
+declare -A jbconf=()
+while read line
+do
+    if [ -z ${line} ]; then
+        continue
+    fi
+    key=$(echo ${line} | cut -d '=' -f1)
+    value=$(echo ${line} | cut -d '=' -f2)
+    jbconf["${key}"]="${value}"
+done < ${JB_CONF}
+
+
+RECORD_DIR=${jbconf['RECORD_DIR']}
+COMP_DIR=${jbconf['COMP_DIR']}
+SYN_DIR=${jbconf['SYN_DIR']}
+VIDEO_SLICE=${jbconf['VIDEO_SLICE']}
+COMP_FMT=${jbconf['COMP_FMT']}
+log "INFO:==================================================="
+log "INFO: RECORD DIR=${RECORD_DIR}"
+log "INFO: COMP DIR=${COMP_DIR}"
+log "INFO: SYN DIR=${SYN_DIR}"
+log "INFO: VIDEO SLICE=${VIDEO_SLICE}"
+log "INFO: COMP FMT=${COMP_FMT}"
+log "INFO:==================================================="
+
+if [ ! -d ${COMP_DIR} ]; then
+    mkdir -p ${COMP_DIR}
+fi
+
+declare -A jbcomped=()
+
+while true
+do
+    ch_comps=$(ls ${COMP_DIR})
+    for ch_comp in ${ch_comps}
+    do
+        ch_comp_dir="${COMP_DIR}/${ch_comp}"
+        if [ ! -d ${ch_comp_dir} ]; then
+            continue
+        fi
+
+        if [ ${jbcomped["${ch_comp}"]} ]; then
+            log "INFO comp ${ch_comp} is running"
+            continue
+        fi
+
+        jbcomped["${ch_comp}"]=true
+        (jbcomp ${ch_comp_dir} ${SYN_DIR} ${COMP_FMT} &)
+        msg="(jbcomp ${ch_comp_dir} ${SYN_DIR} ${COMP_FMT} &)"
+        log "INFO start comp ${msg}"
+    done
+
+    log "INFO current comp channel ${!jbcomped[@]}"
+    sleep 30
+done
+

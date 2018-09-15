@@ -1,0 +1,73 @@
+#!/bin/bash
+CHANNEL_LIST=("HuNanWs"
+              "JiangSuWs"
+              "AnHuiWs"
+              "BeiJingWs"
+              "ChongQinWs"
+              "DongFangWs"
+              "DongNanWs"
+              "GanSuWs"
+              "GuangDongWs"
+              "GuangXiWs"
+              "GuiZhouWs"
+              "HeBeiWs"
+              "HeNanWs"
+              "HeiLongJiangWs"
+              "HuBeiWs"
+              "JiangXiWs"
+              "JiLingWs"
+              "LiaoNingWs"
+              "NeiMengGuWs"
+              "NingXiaWs"
+              "QingHaiWs"
+              "YunNanWs"
+              "XiZangWs"
+              "XinJiangWs"
+              "XiaMengWs"
+              "TianJinWs"
+              "SiChuangWs"
+              "ShanDongWs"
+              "ShanXiWs"
+              "ShenZhenWs"
+              "FuJianXiaMengWs"
+              "YanBianWs"
+              "LvYouWs"
+              "NanFangWs"
+              "MengYuWs"
+              "SanShaWs"
+              "HaiXiaWs"
+              "KangBaWs"
+              "ZheJiangWs"
+              "CCTV1"
+              "CCTV2"
+              "CCTV3"
+              "CCTV4"
+              "CCTV5"
+              "CCTV6"
+              "CCTV7"
+              "CCTV8"
+              "CCTV9"
+              "CCTV10"
+              "CCTV11"
+              "CCTV12"
+              "CCTV-ShaoEr"
+              "CCTV-News")
+
+CHANNEL_NUM=${#CHANNEL_LIST[@]}
+
+echo ""
+echo "Select Channel Name:"
+echo "========================================"
+for((i=0; i<${CHANNEL_NUM}; i++))
+do
+    echo "->$i. ${CHANNEL_LIST[@]:${i}:1}"
+done
+echo "========================================"
+#echo -n "select channel: [0~${CHANNEL_NUM}]?:"
+#read idx
+#if [ -z ${idx} ]; then
+#    echo "error: must select channel"
+#    exit
+#fi
+
+

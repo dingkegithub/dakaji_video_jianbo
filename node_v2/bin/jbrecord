@@ -1,0 +1,74 @@
+#!/bin/bash
+CHANNEL_NAME=$1
+MULTICAST_ADDR=$2
+MULTICAST_PORT=$3
+RECORD_DIR=$4
+COMP_DIR=$5
+VIDEO_SLICES=$6
+LOCAL_ADDRESS=$7
+
+LOG_SIZE=10000000
+LOG_DIR=/var/log/jb
+LOG="${LOG_DIR}/jbr.${MULTICAST_PORT}"
+mkdir -p ${LOG_DIR}
+
+CH_COMP_DIR="${COMP_DIR}/${MULTICAST_PORT}"
+mkdir -p ${CH_COMP_DIR}
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+info() {
+    log "INFO: CHANNEL NAME = ${CHANNEL_NAME}"
+    log "INFO: MULTICAST ADDR = ${MULTICAST_ADDR}"
+    log "INFO: MULTICAST PORT = ${MULTICAST_PORT}"
+    log "INFO: RECORD ROOT PATH = ${RECORD_DIR}"
+    log "INFO: COMPRESS ROOT DIR = ${COMP_DIR}"
+}
+
+while true
+do
+    save_dir=${RECORD_DIR}/${MULTICAST_PORT}/${CHANNEL_NAME}/$(date +%Y%m%d)/$(date +%H)
+    mkdir -p ${save_dir}
+    log "INFO save dir is ${save_dir}"
+    
+    if [ -d ${save_dir} ]; then
+        out_video=${save_dir}/$(date +%H%M%S).ts
+        log "INFO: record file is start ${out_video}"
+
+        log "INFO: record run ffmpeg -i ${MULTICAST_ADDR} -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}"
+        ffmpeg -i ${MULTICAST_ADDR} -vcodec copy -acodec copy -ss 00:00:00 -t ${VIDEO_SLICES} -f mpegts ${out_video}
+        log "INFO: record file is end ${out_video}"
+
+        compress_file="${CH_COMP_DIR}/${MULTICAST_PORT}_$(date +%Y-%m-%dT%H:%M:%S)"
+        if [ -f ${compress_file} ]; then
+            remove ${compress_file}
+        fi
+        log "INFO: comp file ${compress_file}"
+        touch ${compress_file}
+        echo "${LOCAL_ADDRESS}:${out_video}" >> ${compress_file}
+    fi
+done
+

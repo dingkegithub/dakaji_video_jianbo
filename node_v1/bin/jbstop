@@ -1,0 +1,36 @@
+#!/bin/bash
+START_CMD=jbstart
+RECORD_CMD=jbrecord
+COMP_CMD=jbcomp
+FFMPEG_CMD=ffmpeg
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+TMP_FILE="/var/log/jbcmds"
+if [ -f ${TMP_FILE} ]; then
+    remove ${TMP_FILE} 
+fi
+touch ${TMP_FILE}
+
+ps -ef | grep ${RECORD_CMD} | grep -v 'grep' > ${TMP_FILE}
+ps -ef | grep ${COMP_CMD} | grep -v 'grep' >> ${TMP_FILE}
+ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' >> ${TMP_FILE}
+ps -ef | grep ${START_CMD} | grep -v 'grep' > ${TMP_FILE}
+
+while read line
+do
+    line_array=($(echo ${line}))
+    pid=${line_array[1]}
+    name=${line_array[7]}
+    echo "$(date +%Y-%m-%dT%H:%M:%S) INFO line is ${line}"
+    echo "$(date +%Y-%m-%dT%H:%M:%S) INFO kill ${name}:${pid}"
+    kill -9 ${pid}
+done < ${TMP_FILE}
+

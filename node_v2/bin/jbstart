@@ -1,0 +1,130 @@
+#!/bin/bash
+JB_CONF_DIR=/etc/jb
+JB_CONF_FILE=jb.conf
+JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"
+
+JB_CH_CONF_FILE='jbr.conf'
+
+LOG_DIR=/var/log/jb
+LOG="${LOG_DIR}/jbrstart.log"
+LOG_SIZE=10000000
+mkdir -p ${LOG_DIR}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+log "INFO start route"
+$(route-enable)
+log "INFO end route"
+
+
+if [ ! -d ${JB_CONF_DIR} ] || [ ! -f ${JB_CONF} ]; then
+    log "ERROR: not exist dir ${JB_CONF_DIR} or not exit file ${JB_CONF}"
+    exit
+fi
+
+declare -A jbconf=()
+while read line
+do
+    if [ -z ${line} ]; then
+        continue
+    fi
+    key=$(echo ${line} | cut -d '=' -f1)
+    value=$(echo ${line} | cut -d '=' -f2)
+    jbconf["${key}"]="${value}"
+done < ${JB_CONF}
+
+
+RECORD_DIR=${jbconf['RECORD_DIR']}
+COMP_DIR=${jbconf['COMP_DIR']}
+SYN_DIR=${jbconf['SYN_DIR']}
+VIDEO_SLICE=${jbconf['VIDEO_SLICE']}
+COMP_FMT=${jbconf['COMP_FMT']}
+DISK_EXPIRE_HOUR=${jbconf['DISK_EXPIRE_HOUR']}
+DISK_DIR=${jbconf['DISK_DIR']}
+DISK_CYCLE=${jbconf['DISK_CYCLE']}
+DISK_WARN_LEVEL=${jbconf['DISK_WARN_LEVEL']}
+log "INFO:==================================================="
+log "INFO: RECORD DIR=${RECORD_DIR}"
+log "INFO: COMP DIR=${COMP_DIR}"
+log "INFO: SYN DIR=${SYN_DIR}"
+log "INFO: VIDEO SLICE=${VIDEO_SLICE}"
+log "INFO: COMP FMT=${COMP_FMT}"
+log "INFO: DISK EXPIRE HOUR=${DISK_EXPIRE_HOUR}"
+log "INFO: DISK DIR=${DISK_DIR}"
+log "INFO: DISK CYCLE=${DISK_CYCLE}"
+log "INFO: DISK DISK_WARN_LEVEL=${DISK_WARN_LEVEL}"
+log "INFO:==================================================="
+
+
+CONF_DIR_LIST=$(ls ${JB_CONF_DIR} | grep -v ${JB_CONF_FILE})
+for dir in ${CONF_DIR_LIST}
+do
+    conf_dir="${JB_CONF_DIR}/${dir}" 
+    if [ ! -d ${conf_dir} ]; then
+        msg="WARN: file not exist or not dir ${conf_dir}"
+        log "${msg}"
+        continue
+    fi
+
+    conf_file="${conf_dir}/${JB_CH_CONF_FILE}"
+    if [ ! -f ${conf_file} ]; then
+        msg="ERROR: file not exist ${conf_file}"
+        log "${msg}"
+        continue
+    fi
+
+    declare -A m=()
+
+    while read line
+    do
+        if [ -z ${line} ]; then
+            continue
+        fi
+        key=$(echo ${line} | cut -d '=' -f1)
+        value=$(echo ${line} | cut -d '=' -f2)
+        m["${key}"]="${value}"
+    done < ${conf_file}
+
+    (jbrecord ${m['CHANNEL']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} ${m['LOCAL']} &)
+    msg="(jbrecord ${m['CHANNEL']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} ${m['LOCAL']} &)"
+    log "INFO: run cmd: ${msg}"
+    
+    msg="(jbsyn ${COMP_DIR} ${m['REMOTE']} ${m['PORT']} &)"
+    (jbsyn ${COMP_DIR} ${m['REMOTE']} ${m['PORT']} &)
+    log "INFO: run cmd: ${msg}"
+done
+
+#(jbdisk &)
+
+RECORD_CMD=jbrecord
+SYN_CMD=jbsyn
+FFMPEG_CMD=ffmpeg
+JBDISK_CMD=jbdisk
+
+while true
+do
+    record_num=$(ps -ef | grep ${RECORD_CMD} | grep -v 'grep' | wc -l)
+    syn_num=$(ps -ef | grep ${SYN_CMD} | grep -v 'grep' | wc -l)
+    ffmpeg_num=$(ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' | wc -l)
+    disk_num=$(ps -ef | grep ${JBDISK_CMD} | grep -v 'grep' | wc -l)
+
+    log "INFO current record num ${record_num}"
+    log "INFO current syn num ${syn_num}"
+    log "INFO current ffmpeg num ${ffmpeg_num}"
+    log "INFO current ffmpeg num ${disk_num}"
+    sleep 300
+done
+

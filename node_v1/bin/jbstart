@@ -1,0 +1,112 @@
+#!/bin/bash
+JB_CONF_DIR=/etc/jb
+JB_CONF_FILE=jb.conf
+JB_CONF="${JB_CONF_DIR}/${JB_CONF_FILE}"
+
+JB_CH_CONF_FILE='jbr.conf'
+
+LOG="/var/log/jbrstart.log"
+LOG_SIZE=10000000
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+log "INFO start route"
+$(route-enable)
+log "INFO end route"
+
+
+if [ ! -d ${JB_CONF_DIR} ] || [ ! -f ${JB_CONF} ]; then
+    log "ERROR: not exist dir ${JB_CONF_DIR} or not exit file ${JB_CONF}"
+    exit
+fi
+
+declare -A jbconf=()
+while read line
+do
+    key=$(echo ${line} | cut -d '=' -f1)
+    value=$(echo ${line} | cut -d '=' -f2)
+    jbconf["${key}"]="${value}"
+done < ${JB_CONF}
+
+
+LOG_DIR=${jbconf['LOG_DIR']}
+LOG_PREFIX=${jbconf['LOG_PREFIX']}
+LOG_SIZE=${jbconf['LOG_SIZE']}
+RECORD_DIR=${jbconf['RECORD_DIR']}
+COMP_DIR=${jbconf['COMP_DIR']}
+SYN_DIR=${jbconf['SYN_DIR']}
+VIDEO_SLICE=${jbconf['VIDEO_SLICE']}
+log "INFO:==================================================="
+log "INFO: LOG DIR=${LOG_DIR}"
+log "INFO: LOG PREFIX=${LOG_PREFIX}"
+log "INFO: LOG SIZE=${LOG_SIZE}"
+log "INFO: RECORD DIR=${RECORD_DIR}"
+log "INFO: COMP DIR=${COMP_DIR}"
+log "INFO: SYN DIR=${SYN_DIR}"
+log "INFO: VIDEO SLICE=${VIDEO_SLICE}"
+log "INFO:==================================================="
+
+
+CONF_DIR_LIST=$(ls ${JB_CONF_DIR} | grep -v ${JB_CONF_FILE})
+for dir in ${CONF_DIR_LIST}
+do
+    conf_dir="${JB_CONF_DIR}/${dir}" 
+    if [ ! -d ${conf_dir} ]; then
+        msg="WARN: file not exist or not dir ${conf_dir}"
+        log "${msg}"
+        continue
+    fi
+
+    conf_file="${conf_dir}/${JB_CH_CONF_FILE}"
+    if [ ! -f ${conf_file} ]; then
+        msg="ERROR: file not exist ${conf_file}"
+        log "${msg}"
+        continue
+    fi
+
+    declare -A m=()
+
+    while read line
+    do
+        key=$(echo ${line} | cut -d '=' -f1)
+        value=$(echo ${line} | cut -d '=' -f2)
+        m["${key}"]="${value}"
+    done < ${conf_file}
+
+    msg="(jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &)"
+    (jbrecord ${m['CHANNEL_NAME']} ${m['IP']} ${m['PORT']} ${RECORD_DIR} ${COMP_DIR} ${VIDEO_SLICE} &)
+    log "INFO: run cmd: ${msg}"
+    
+    msg="(jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &)"
+    (jbcomp ${COMP_DIR} ${SYN_DIR} ${m['PORT']} &)
+    log "INFO: run cmd: ${msg}"
+done
+
+RECORD_CMD=jbrecord
+COMP_CMD=jbcomp
+FFMPEG_CMD=ffmpeg
+while true
+do
+    record_num=$(ps -ef | grep ${RECORD_CMD} | grep -v 'grep' | wc -l)
+    comp_num=$(ps -ef | grep ${COMP_CMD} | grep -v 'grep' | wc -l)
+    ffmpeg_num=$(ps -ef | grep ${FFMPEG_CMD} | grep -v 'grep' | wc -l)
+
+    log "INFO current record num ${record_num}"
+    log "INFO current comp num ${comp_num}"
+    log "INFO current ffmpeg num ${ffmpeg_num}"
+    sleep 300
+done
+

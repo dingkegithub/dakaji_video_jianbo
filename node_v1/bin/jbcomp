@@ -1,0 +1,95 @@
+#!/bin/bash
+COMP_DIR=$1
+RSYN_DIR=$2
+PORT="$3"
+TEST_MODE=0
+
+BIT_RATE=400k
+
+CH_COMP_DIR=""
+LOG_NAME=""
+if [ -z ${PORT} ]; then
+    LOG_NAME=jbc
+    CH_COMP_DIR=${COMP_DIR}
+else
+    LOG_NAME="jbc.${PORT}"
+    CH_COMP_DIR="${COMP_DIR}/${PORT}"
+fi
+
+
+LOG_SIZE=10000000
+LOG="/var/log/${LOG_NAME}"
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+while true
+do
+    if [ -d ${CH_COMP_DIR} ]; then
+        files=""
+        if [ -z ${PORT} ]; then
+            files=$(ls ${CH_COMP_DIR})
+        else
+            files=$(ls ${CH_COMP_DIR} | grep ${PORT})
+        fi
+
+        log "INFO CH_COMP_DIR=${CH_COMP_DIR} ${PORT}"
+
+        for file in ${files}
+        do
+            cmp_meta_file="${CH_COMP_DIR}/${file}"
+            record_file=$(cat ${cmp_meta_file})
+
+            meta=(${record_file//\// })
+            meta_size=${#meta[@]}
+            meta_ch_port=${meta[$(echo "${meta_size}-5" | bc)]}
+            meta_ch_name=${meta[$(echo "${meta_size}-4" | bc)]}
+            meta_ch_date=${meta[$(echo "${meta_size}-3" | bc)]}
+            meta_ch_hour=${meta[$(echo "${meta_size}-2" | bc)]}
+            meta_ch_file=${meta[$(echo "${meta_size}-1" | bc)]}
+           
+            comp_out_dir="${RSYN_DIR}/${meta_ch_port}/${meta_ch_name}/${meta_ch_date}/${meta_ch_hour}"
+            mkdir -p ${comp_out_dir}
+            comp_out_file="${comp_out_dir}/${meta_ch_file}"
+
+            if [ ${TEST_MODE} -eq 1 ]; then
+                touch ${comp_out_file}
+            else
+                ffmpeg -i ${record_file} -b ${BIT_RATE} ${comp_out_file}
+            fi
+
+            if [ -f ${cmp_meta_file} ]; then
+                remove ${cmp_meta_file}
+            fi
+           
+            log "INFO: clean compress meta file ${cmp_meta_file}"
+        done
+    else
+        log "WARN: not found need rsync sleeping..."
+        info
+        sleep 30
+    fi
+done
+

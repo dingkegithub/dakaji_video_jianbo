@@ -1,0 +1,93 @@
+#!/bin/bash
+COMP_DIR=$1
+REMOTE=$2
+PORT="$3"
+TEST_MODE=0
+
+LOG_NAME=""
+CH_COMP_DIR=""
+if [ -z ${PORT} ]; then
+    LOG_NAME=jbs
+    CH_COMP_DIR=${COMP_DIR}
+else
+    LOG_NAME="jbs.${PORT}"
+    CH_COMP_DIR="${COMP_DIR}/${PORT}"
+fi
+
+LOG_SIZE=10000000
+LOG_DIR=/var/log/jb
+LOG="${LOG_DIR}/${LOG_NAME}"
+mkdir -p ${LOG_DIR}
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+while true
+do
+    if [ -d ${CH_COMP_DIR} ]; then
+        files=""
+        if [ -z ${PORT} ]; then
+            files=$(ls ${CH_COMP_DIR})
+        else
+            files=$(ls ${CH_COMP_DIR} | grep ${PORT} | grep -v 'grep')
+        fi
+
+        log "INFO CH_COMP_DIR=${CH_COMP_DIR} ${PORT}"
+
+        if [ -z ${files} ]; then
+            log "INFO not found any recored into sleeping"
+            sleep 60
+            continue
+        fi
+
+        for file in ${files}
+        do
+            cmp_meta_file="${CH_COMP_DIR}/${file}"
+            sres=$(ssh ${REMOTE} "[ ! -d ${CH_COMP_DIR} ] && mkdir -p ${CH_COMP_DIR}")
+            if [ ! -z ${sres} ]; then
+                log "WARN: ssh ${REMOTE} failed: ${sres}"
+                continue
+            fi
+            sres=$(scp ${cmp_meta_file} ${REMOTE}:${CH_COMP_DIR})
+            if [ ! -z ${sres} ]; then
+                log "WARN: scp ${REMOTE} failed: ${sres}"
+                continue
+            fi
+            log "INFO run ssh ssh ${REMOTE} [ ! -d ${CH_COMP_DIR} ] && mkdir -p ${CH_COMP_DIR}"
+            log "INFO scp ${cmp_meta_file} ${REMOTE}:${CH_COMP_DIR}"
+
+            if [ -f ${cmp_meta_file} ]; then
+                remove ${cmp_meta_file}
+            fi
+           
+            log "INFO: clean compress meta file ${cmp_meta_file}"
+        done
+    else
+        log "WARN: not found need rsync sleeping..."
+        info
+        sleep 30
+    fi
+done
+

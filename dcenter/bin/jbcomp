@@ -1,0 +1,105 @@
+#!/bin/bash
+COMP_DIR=$1
+RSYN_DIR=$2
+COMP_FMT=$3
+BIT_RATE=400k
+PORT=$(basename ${COMP_DIR})
+
+LOG_NAME=""
+if [ -z ${PORT} ]; then
+    LOG_NAME=jbc
+else
+    LOG_NAME="jbc.${PORT}"
+fi
+
+LOG_SIZE=10000000
+LOG_DIR=/var/log/jb
+LOG="${LOG_DIR}/${LOG_NAME}"
+mkdir -p ${LOG_DIR}
+
+remove() {
+    cur_dir=$(pwd)
+    dir_name=$(dirname $1)
+    base_name=$(basename $1)
+    cd ${dir_name}
+    rm -rf ${base_name}
+    cd ${cur_dir}
+}
+
+log() {
+    if [ ! -f ${LOG} ]; then
+        touch ${LOG}
+    else
+        log_size=$(ls -l ${LOG} | cut -d ' ' -f5)
+        too_bigger=$(echo "${log_size} >= ${LOG_SIZE}" | bc)
+
+        if [ ${too_bigger} -eq 1 ]; then
+            rm ${LOG}
+            touch ${LOG}
+        fi
+    fi
+
+    echo "$(date +%Y-%m-%dT%H:%M:%S) $1" >> ${LOG}
+}
+
+while true
+do
+    if [ -d ${COMP_DIR} ]; then
+        files=
+        if [ -z ${PORT} ]; then
+            files=$(ls ${COMP_DIR})
+        else
+            files=$(ls ${COMP_DIR} | grep ${PORT})
+        fi
+
+        if [ -z ${files} ]; then
+            log "INFO blank dir ${COMP_DIR} and into sleeping"
+            sleep 60
+            continue
+        fi
+
+        log "INFO COMP_DIR=${COMP_DIR} ${PORT}"
+
+        for file in ${files}
+        do
+            cmp_meta_file="${COMP_DIR}/${file}"
+            remote_file=$(cat ${cmp_meta_file})
+            
+            record_file=$(echo ${remote_file} | cut -d ':' -f2)
+            record_file_dir=$(dirname ${record_file})
+            mkdir -p ${record_file_dir}
+            sres=$(scp ${remote_file} ${record_file_dir})
+            if [ ! -z ${sres} ]; then
+                log "WARN scp failed: ${sres}"
+                continue
+            fi
+
+            meta=(${record_file//\// })
+            meta_size=${#meta[@]}
+            meta_ch_port=${meta[$(echo "${meta_size}-5" | bc)]}
+            meta_ch_name=${meta[$(echo "${meta_size}-4" | bc)]}
+            meta_ch_date=${meta[$(echo "${meta_size}-3" | bc)]}
+            meta_ch_hour=${meta[$(echo "${meta_size}-2" | bc)]}
+            meta_ch_file=${meta[$(echo "${meta_size}-1" | bc)]}
+           
+            comp_out_dir="${RSYN_DIR}/${meta_ch_port}/${meta_ch_name}/${meta_ch_date}/${meta_ch_hour}"
+            mkdir -p ${comp_out_dir}
+
+            meta_ch_file_name=$(echo ${meta_ch_file} | cut -d '.' -f1)
+            comp_out_file="${comp_out_dir}/${meta_ch_file_name}.${COMP_FMT}"
+
+            ffmpeg -i ${record_file} -b ${BIT_RATE} ${comp_out_file}
+
+            if [ -f ${cmp_meta_file} ]; then
+                remove ${cmp_meta_file}
+            fi
+           
+            log "INFO: clean compress meta file ${cmp_meta_file}"
+        done
+    else
+        log "WARN: not found need rsync sleeping..."
+        info
+        sleep 30
+    fi
+done
+
