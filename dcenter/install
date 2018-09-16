@@ -5,6 +5,7 @@ apt-get update
 apt-get remove vim-tiny
 apt-get install vim
 apt-get install tree
+apt-get install htop
 apt-get install build-essential
 apt-get install pkg-config
 apt-get install net-tools

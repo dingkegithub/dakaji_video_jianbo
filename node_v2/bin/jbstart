@@ -107,7 +107,6 @@ do
     log "INFO: run cmd: ${msg}"
 done
 
-#(jbdisk &)
 
 RECORD_CMD=jbrecord
 SYN_CMD=jbsyn
@@ -125,6 +124,8 @@ do
     log "INFO current syn num ${syn_num}"
     log "INFO current ffmpeg num ${ffmpeg_num}"
     log "INFO current ffmpeg num ${disk_num}"
+
+    jbdisk ${JB_CONF}
     sleep 300
 done
 

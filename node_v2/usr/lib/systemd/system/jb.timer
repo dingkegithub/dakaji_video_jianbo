@@ -2,7 +2,7 @@
 Description=on boot start
 
 [Timer]
-OnBootSec=5min
+OnBootSec=10min
 Unit=jb.service
 
 [Install]

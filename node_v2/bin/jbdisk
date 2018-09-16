@@ -5,7 +5,6 @@ JB_CONF_DIR=$(dirname ${JB_CONF})
 LOG_DIR="/var/log/jb"
 LOG="${LOG_DIR}/disk.log"
 LOG_SIZE=10000000
-TMP_FILE=${LOG_DIR}"/.disk"
 mkdir -p ${LOG_DIR}
 
 remove() {
@@ -83,12 +82,6 @@ clean() {
     done
 }
 
-
-
-if [ ! -f ${TMP_FILE} ]; then
-    touch ${TMP_FILE}
-fi
-
 while true
 do
     i=0
@@ -99,9 +92,9 @@ do
     used=${disk_info[$(echo "${size} - 2" | bc)]}
     used_percent=$(echo ${used} | cut -d '%' -f1)
 
-    log "INFO used percent ${used_percent}%, WARN[${WARN}]"
-
     res=$(echo "${used_percent} > ${WARN}" | bc)
+    log "INFO used percent ${used_percent}%, WARN[${WARN}]"
+    
     if [ ${res} -eq 1 ]; then
         log "WARN disk will full"
         for p_dir in $(ls ${RECORD_DIR})
