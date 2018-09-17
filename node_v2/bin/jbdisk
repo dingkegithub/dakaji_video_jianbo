@@ -82,6 +82,40 @@ clean() {
     done
 }
 
+
+clean_one_hour() {
+    p_path=$1
+    for ch_dir in $(ls ${p_path})
+    do
+        ch_path="${p_path}/${ch_dir}"
+        if [ ! -d ${ch_path} ]; then
+            continue
+        fi
+
+        for y_dir in $(ls ${ch_path} | sort)
+        do
+            y_path="${ch_path}/${y_dir}"
+            if [ ! -d ${y_path} ]; then
+                continue
+            fi
+
+            for d_dir in $(ls ${y_path} | sort)
+            do
+                d_path=${y_path}/${d_dir}
+                if [ ! -d ${d_path} ]; then
+                    continue
+                fi
+ 
+                remove ${d_path}
+                break
+            done
+
+            break
+        done
+    done
+}
+
+
 while true
 do
     i=0
@@ -99,7 +133,8 @@ do
         log "WARN disk will full"
         for p_dir in $(ls ${RECORD_DIR})
         do
-            clean "${RECORD_DIR}/${p_dir}"
+            #clean "${RECORD_DIR}/${p_dir}"
+            clean_one_hour "${RECORD_DIR}/${p_dir}"
         done
     fi
 

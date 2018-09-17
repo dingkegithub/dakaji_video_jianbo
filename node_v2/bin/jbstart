@@ -126,6 +126,6 @@ do
     log "INFO current ffmpeg num ${disk_num}"
 
     jbdisk ${JB_CONF}
-    sleep 300
+    sleep ${DISK_CYCLE}
 done
 
